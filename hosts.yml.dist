@@ -1,0 +1,13 @@
+hosts:
+    server_name:
+        hosts:
+            - 'username@host:port'
+        path: '/path/to/source'
+        composer_bin: '/path/to/composer'
+        php_bin: '/path/to/php'
+        phpunit_bin: '/path/to/local/phpunit'
+        branch: 'master'
+        tests: false
+        repo: 'git@repo.org'
+        database_migrations: false
+        forward_agent: true
