@@ -20,6 +20,7 @@ free to suggest anything or to improve it by yourself.
     2. [tests](#tests)
     3. [pre_deploy](#pre_deploy)
     4. [deploy](#deploy)
+    4. [rollback](#rollback)
 4. [Execution.](#execution)
 
 ========================
@@ -109,11 +110,16 @@ composer update, executes database migrations —if specified— and clears the 
 Note that the project must already be configured at the specified host as it only updates the source code, it
  does not install it.
 
+### `rollback`
+
+It rollbacks the code to a specified commit or to a number of revisions back. It requires a parameter, revision,
+that may be a number —rolling back that number of commits— or a string —rolling back to that revision.
+
 ========================
 
 ## Execution
 
-You can call any task to be executed from the command line. The most useful are `pre_deploy` and `deploy`:
+You can call any task to be executed from the command line. The most useful are `pre_deploy`, `deploy` and `rollback`:
 
 ```bash
 fab --set server=server_name pre_deploy
@@ -121,6 +127,18 @@ fab --set server=server_name pre_deploy
 
 ```bash
 fab --set server=server_name deploy
+```
+
+To rollback 3 revisions:
+
+```bash
+fab --set server=server_name rollback:3
+```
+
+To rollback to a specified commit:
+
+```bash
+fab --set server=server_name rollback:ab3ba
 ```
 
 `server_name` is the name defined in your configuration file.
