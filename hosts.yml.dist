@@ -11,3 +11,8 @@ hosts:
         repo: 'git@repo.org'
         database_migrations: false
         forward_agent: true
+        assets:
+            enabled: false
+            symlink: true
+            relative: false
+            target_path: '/path/to/target/path'

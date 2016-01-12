@@ -105,7 +105,8 @@ before deploying to production.
 ### `deploy`
 
 It deploys the application by updating the source to the last commit of the specified git branch, executes a
-composer update, executes database migrations —if specified— and clears the cache for the _production_ environment.
+composer update, installs assets —if specified— executes database migrations —if specified— and clears the cache
+for the _production_ environment.
 
 Note that the project must already be configured at the specified host as it only updates the source code, it
  does not install it.
@@ -148,12 +149,13 @@ fab --set server=server_name rollback:ab3ba
 ## TODO
 
 - Ship as a bundle.
-- Add more post-deployment tasks, such as installing assets.
+- Add more post-deployment tasks~~, such as installing assets~~.
 - Checking `hosts.yml` file integrity.
 - Backup the database prior to any migration.
 - Allowing not only to update the project, but also to install it.
 - Check compatibility for Symfony3.
 - Silent mode.
+- Tests.
 
 
 

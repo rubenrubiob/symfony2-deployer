@@ -63,8 +63,8 @@ def pre_deploy():
 def deploy():
     """
     Deploys the application by updating the source to the last commit of the specified
-    git branch, executes a composer update, executes database migrations (if specified)
-    and clears the cache.
+    git branch, executes a composer update, installs assets (if specified) executes database
+    migrations (if specified) and clears the cache.
     """
 
     with cd(server['path']):
@@ -109,7 +109,7 @@ def rollback(revision='1'):
 
 def _pull():
     """
-    Executing regular git pull, updating code to last commit
+    Executing regular git pull, updating code to last commit.
     """
     run('git fetch')
     run('git checkout %s' % server['branch'])
@@ -118,10 +118,27 @@ def _pull():
 
 def _post_deployment_tasks():
     """
-    Executes a composer update, executes database migrations (if specified) and clears the cache
+    Executes a composer update, installs assets (if specified), executes database migrations (if specified)
+    and clears the cache.
     """
     # Composer update
     run('%s %s update' % (server['php_bin'], server['composer_bin']))
+
+    # Assets install, if enabled
+    if 'assets' in server and server['assets']['enabled']:
+        assets_args = []
+
+        if 'target_path' in server['assets'] and server['assets']['target_path']:
+            assets_args.append(server['assets']['target_path'])
+
+        if 'symlink' in server['assets'] and server['assets']['symlink']:
+            assets_args.append('--symlink')
+
+        if 'relative' in server['assets'] and server['assets']['relative']:
+            assets_args.append('--relative')
+
+        run('%s %s/app/console assets:install --env=prod %s' % (
+            server['php_bin'], server['path'], ' '.join(assets_args)))
 
     # Database migrations
     if 'database_migrations' in server and server['database_migrations']:
