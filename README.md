@@ -67,6 +67,11 @@ hosts:
         repo: 'git@repo.org'
         database_migrations: false
         forward_agent: true
+        assets:
+            enabled: false
+            symlink: true
+            relative: false
+            target_path: '/path/to/target/path'
 ```
 
 Some things to take into account:
@@ -81,6 +86,8 @@ the different paths defined and the branch must be the same for all of them.
 - `forward_agent` indicates whether the local SSH agent must be forwarded, so the authentication against the host
 can be done using a private key. It is extremely recommended to use it, so you do not have to enter the password
 each time you deploy the application.
+- `assets` manages the `assets:install` task. If its `enabled` key is true, it installs the assets, with the
+corresponding options specified, that are the same as the Symfony2 command. 
 
 ========================
 
