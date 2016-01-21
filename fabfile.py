@@ -1,6 +1,7 @@
 from fabric.api import *
-from fabric.utils import abort
+from fabric.utils import abort, puts
 from fabric.colors import green, red, yellow
+from fabric.state import output
 import os
 import re
 import yaml
@@ -32,32 +33,21 @@ env.hosts = server['hosts']
 # Forward agent if specified
 env.forward_agent = server['forward_agent']
 
-
-def checkout():
-    """
-    Checkouts specified branch.
-    """
-    local('git fetch')
-    local('git checkout %s' % server['branch'])
-    local('git pull origin %s' % server['branch'])
-    print(green('Correctly checked out %s branch in local' % (server['branch']), bold=True))
-
-
-def tests():
-    """
-    Executes tests.
-    """
-    local('%s -c app' % server['phpunit_bin'])
-    print(green('Correctly executed tests in local', bold=True))
+# Set False for required channels
+if 'verbose' not in env.keys():
+    output.stdout = False
+    output.stderr = False
+    output.running = False
+    output.warnings = False
 
 
 def pre_deploy():
     """
     Checkouts the specified branch and execute the tests, if specified.
     """
-    checkout()
+    _checkout()
     if server['tests']:
-        tests()
+        _tests()
 
 
 def deploy():
@@ -74,7 +64,7 @@ def deploy():
         # Execute post deployment tasks
         _post_deployment_tasks()
 
-        print(green('Correctly deployed to %s' % env.server, bold=True))
+        _print_output('\nCorrectly deployed to %s' % env.server, '\n', False)
 
 
 def rollback(revision='1'):
@@ -91,29 +81,70 @@ def rollback(revision='1'):
         _pull()
 
         # Rollback according to version or a number of revisions
-        if re.match(r"\d+$", revision) is not None:
-            run('git checkout HEAD~%s' % revision)
-            revision = run('git rev-parse --short HEAD', quiet=True)
-        else:
-            result = run('git checkout %s' % revision, quiet=True)
-            if result.failed:
-                abort(red('Revision %s does not exist' % revision, bold=True))
+        revision = _do_rollback(revision)
 
         # Execute post deployment tasks
         _post_deployment_tasks()
 
         # Print okay and warning message, informing that the database may be not up to date
-        print(green('Correctly rolled back to %s' % revision, bold=True))
-        print(yellow('Remember to check your database, because it may be not in sync with your code!!', bold=True))
+        _print_output('\nCorrectly rolled back to %s' % revision, '\n', False)
+        print(yellow('Remember to check your database, because it may not be in sync with your code!!', bold=True))
+
+
+def _checkout():
+    """
+    Checkouts specified branch.
+    """
+    _print_output('Locally checking out')
+
+    local('git fetch')
+    local('git checkout %s' % server['branch'])
+    local('git pull origin %s' % server['branch'])
+
+    _print_ok()
+
+
+def _tests():
+    """
+    Executes tests.
+    """
+    _print_output('Executing tests')
+    local('%s -c app' % server['phpunit_bin'])
+    _print_ok()
 
 
 def _pull():
     """
     Executing regular git pull, updating code to last commit.
     """
+    _print_output('Updating source code')
+
     run('git fetch')
     run('git checkout %s' % server['branch'])
     run('git pull origin %s' % server['branch'])
+
+    _print_ok()
+
+
+def _do_rollback(revision):
+    """
+    Rollback according to version or a number of revisions
+    :param revision: version or number of revisions to rollback
+    :return:
+    """
+    _print_output('Rolling back')
+
+    if re.match(r"\d+$", revision) is not None:
+        run('git checkout HEAD~%s' % revision)
+        revision = run('git rev-parse --short HEAD', quiet=True)
+    else:
+        result = run('git checkout %s' % revision, quiet=True)
+        if result.failed:
+            abort(red('Revision %s does not exist' % revision, bold=True))
+
+    _print_ok()
+
+    return revision
 
 
 def _post_deployment_tasks():
@@ -121,11 +152,28 @@ def _post_deployment_tasks():
     Executes a composer update, installs assets (if specified), executes database migrations (if specified)
     and clears the cache.
     """
-    # Composer update
-    run('%s %s update' % (server['php_bin'], server['composer_bin']))
+    _composer_update()
+    _assets_install()
+    _database_migrations()
+    _cache_clear()
 
-    # Assets install, if enabled
+
+def _composer_update():
+    """
+    Composer update
+    """
+    _print_output('Updating composer')
+    run('%s %s update' % (server['php_bin'], server['composer_bin']))
+    _print_ok()
+
+
+def _assets_install():
+    """
+    Assets install, if enabled
+    """
     if 'assets' in server and server['assets']['enabled']:
+        _print_output('Installing assets')
+
         assets_args = []
 
         if 'target_path' in server['assets'] and server['assets']['target_path']:
@@ -140,10 +188,46 @@ def _post_deployment_tasks():
         run('%s %s/app/console assets:install --env=prod %s' % (
             server['php_bin'], server['path'], ' '.join(assets_args)))
 
-    # Database migrations
+        _print_ok()
+
+
+def _database_migrations():
+    """
+    Database migrations, if enabled
+    """
     if 'database_migrations' in server and server['database_migrations']:
+        _print_output('Migrating database')
         run('%s %s/app/console doctrine:migrations:migrate --env=prod --no-interaction' % (
             server['php_bin'], server['path']))
+        _print_ok()
 
-    # Cache clear
+
+def _cache_clear():
+    """
+    Cache clear
+    """
+    _print_output('Clearing cache')
     run('%s %s/app/console cache:clear --env=prod' % (server['php_bin'], server['path']))
+    _print_ok()
+
+
+def _print_output(message, end='', padding=True):
+    """
+    Aux function for printing messages if verbose is not enabled
+    :param message: the message to print
+    :param end: the character to print at line end
+    :return:
+    """
+    if 'verbose' not in env.keys():
+        if padding:
+            puts(green('{:.<100}'.format(message), bold=True), end=end, show_prefix=False, flush=True)
+        else:
+            puts(green(message, bold=True), end=end, show_prefix=False, flush=True)
+
+
+def _print_ok():
+    """
+    Aux function for printing a tick
+    :return:
+    """
+    _print_output(u'\u2714', '\n', False)

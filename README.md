@@ -16,11 +16,9 @@ free to suggest anything or to improve it by yourself.
 1. [Requirements.](#requirements)
 2. [Configuration.](#configuration)
 3. [Tasks.](#tasks)
-    1. [checkout](#checkout)
-    2. [tests](#tests)
-    3. [pre_deploy](#pre_deploy)
-    4. [deploy](#deploy)
-    4. [rollback](#rollback)
+    1. [pre_deploy](#pre_deploy)
+    2. [deploy](#deploy)
+    3. [rollback](#rollback)
 4. [Execution.](#execution)
 
 ========================
@@ -95,19 +93,15 @@ corresponding options specified, that are the same as the Symfony2 command.
 
 The tasks that may be called from the command line are the following.
 
-### `checkout`
-
-It locally checks out the specified branch, so it is verifiable that it does not have any thing that you do not want
-to deploy. It is also the previous step to executing the tests.
-
-### `tests`
-
-It locally executes the tests.
-
 ### `pre_deploy`
 
-It calls the tasks `checkout` and `tests` —if defined. It is useful when you want to verify that everything is right
-before deploying to production.
+Locally checkouts the specified branch for server and execute the tests, if defined.
+
+Execution example:
+
+```bash
+fab --set server=prod pre_deploy
+```
 
 ### `deploy`
 
@@ -117,51 +111,61 @@ for the _production_ environment.
 
 Note that the project must already be configured at the specified host as it only updates the source code, it
  does not install it.
+ 
+Deploy to a server named _prod_ in `hosts.yml` file:
+
+```bash
+fab --set server=prod deploy
+```
 
 ### `rollback`
 
 It rollbacks the code to a specified commit or to a number of revisions back. It requires a parameter, revision,
 that may be a number —rolling back that number of commits— or a string —rolling back to that revision.
 
+To rollback 3 revisions in a server named _prod_ in `hosts.yml` file:
+
+```bash
+fab --set server=prod rollback:3
+```
+
+To rollback to a specified commit in a server named _prod_ in `hosts.yml` file:
+
+```bash
+fab --set server=prod rollback:ab3ba
+```
+
 ========================
 
 ## Execution
 
-You can call any task to be executed from the command line. The most useful are `pre_deploy`, `deploy` and `rollback`:
-
-```bash
-fab --set server=server_name pre_deploy
-```
+These are the execution options that may be passed to command line:
+- `server`: required. It is the name of the server defined in `hosts.yml` file where you want to execute the task.
+Example: 
 
 ```bash
 fab --set server=server_name deploy
 ```
 
-To rollback 3 revisions:
+- `verbose`: optional. If defined, it shows the output of command executions instead of informative messages. Example:
 
 ```bash
-fab --set server=server_name rollback:3
+fab --set server=server_name,verbose deploy
 ```
 
-To rollback to a specified commit:
-
-```bash
-fab --set server=server_name rollback:ab3ba
-```
-
-`server_name` is the name defined in your configuration file.
 
 ========================
 
 ## TODO
 
-- Ship as a bundle.
+- File backup, for user files, such as images.
+- Ship as a bundle or git submodule.
 - Add more post-deployment tasks~~, such as installing assets~~.
 - Checking `hosts.yml` file integrity.
 - Backup the database prior to any migration.
 - Allowing not only to update the project, but also to install it.
 - Check compatibility for Symfony3.
-- Silent mode.
+- ~~Silent mode.~~
 - Tests.
 
 
