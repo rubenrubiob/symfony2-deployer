@@ -5,6 +5,8 @@ from fabric.state import output
 import os
 import re
 import yaml
+import time
+import datetime
 
 """
 Set global data before functions
@@ -60,6 +62,9 @@ def deploy():
     """
 
     with cd(server['path']):
+        # Generate file backup before pull
+        _do_file_backup()
+
         # Execute git pull
         _pull()
 
@@ -126,6 +131,33 @@ def _pull():
     _check_run_result(run('git pull origin %s' % server['branch']))
 
     _print_ok()
+
+
+def _do_file_backup():
+    """
+    Generate a backup of files specified on hosts.yml
+    """
+
+    if 'file_backups' in server and server['file_backups']['enabled']:
+        _print_output('Generating file backup')
+
+        # Backup directory name for this backup
+        backup_dir = int(time.time())
+
+        # Create backup directory for this backup
+        _check_run_result(run("mkdir %s/%s" % (server['file_backups']['destination_path'], backup_dir)))
+
+        # Copy files to backup folder with parent structure
+        for file in server['file_backups']['files']:
+            _check_run_result(run("cp -Ra --parents %s %s/%s" % (file, server['file_backups']['destination_path'], backup_dir)))
+
+        # Delete old backups
+        if server['file_backups']['number_of_backups'] > 0:
+            output = run("ls -t %s | awk '{if(NR>%s)print}'" % (server['file_backups']['destination_path'], server['file_backups']['number_of_backups']))
+            for file in output.split():
+                _check_run_result(run("rm -R %s/%s" % (server['file_backups']['destination_path'], file)))
+
+        _print_ok()
 
 
 def _do_rollback(revision):

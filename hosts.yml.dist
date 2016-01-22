@@ -16,3 +16,10 @@ hosts:
             symlink: true
             relative: false
             target_path: '/path/to/target/path'
+        file_backups:
+            enabled: false
+            destination_path: '/path/to/target/path'
+            files:
+                - '/path/to/target/path'
+                - '/path/to/target/path'
+            number_of_backups: 10
