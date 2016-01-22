@@ -40,6 +40,8 @@ if 'verbose' not in env.keys():
     output.running = False
     output.warnings = False
 
+# To ignore exceptions and handle them yurself
+env.warn_only = True
 
 def pre_deploy():
     """
@@ -59,7 +61,7 @@ def deploy():
 
     with cd(server['path']):
         # Execute git pull
-        _pull()
+        #_pull()
 
         # Execute post deployment tasks
         _post_deployment_tasks()
@@ -119,9 +121,9 @@ def _pull():
     """
     _print_output('Updating source code')
 
-    run('git fetch')
-    run('git checkout %s' % server['branch'])
-    run('git pull origin %s' % server['branch'])
+    _check_run_result(run('git fetch'))
+    _check_run_result(run('git checkout %s' % server['branch']))
+    _check_run_result(run('git pull origin %s' % server['branch']))
 
     _print_ok()
 
@@ -135,7 +137,7 @@ def _do_rollback(revision):
     _print_output('Rolling back')
 
     if re.match(r"\d+$", revision) is not None:
-        run('git checkout HEAD~%s' % revision)
+        _check_run_result(run('git checkout HEAD~%s' % revision))
         revision = run('git rev-parse --short HEAD', quiet=True)
     else:
         result = run('git checkout %s' % revision, quiet=True)
@@ -163,7 +165,7 @@ def _composer_update():
     Composer update
     """
     _print_output('Updating composer')
-    run('%s %s update' % (server['php_bin'], server['composer_bin']))
+    _check_run_result(run('%s update' % (server['composer_bin'])))
     _print_ok()
 
 
@@ -185,8 +187,8 @@ def _assets_install():
         if 'relative' in server['assets'] and server['assets']['relative']:
             assets_args.append('--relative')
 
-        run('%s %s/app/console assets:install --env=prod %s' % (
-            server['php_bin'], server['path'], ' '.join(assets_args)))
+        _check_run_result(run('%s %s/app/console assets:install --env=prod %s' % (
+            server['php_bin'], server['path'], ' '.join(assets_args))))
 
         _print_ok()
 
@@ -197,8 +199,8 @@ def _database_migrations():
     """
     if 'database_migrations' in server and server['database_migrations']:
         _print_output('Migrating database')
-        run('%s %s/app/console doctrine:migrations:migrate --env=prod --no-interaction' % (
-            server['php_bin'], server['path']))
+        _check_run_result(run('%s %s/app/console doctrine:migrations:migrate --env=prod --no-interaction' % (
+            server['php_bin'], server['path'])))
         _print_ok()
 
 
@@ -207,7 +209,7 @@ def _cache_clear():
     Cache clear
     """
     _print_output('Clearing cache')
-    run('%s %s/app/console cache:clear --env=prod' % (server['php_bin'], server['path']))
+    _check_run_result(run('%s %s/app/console cache:clear --env=prod' % (server['php_bin'], server['path'])))
     _print_ok()
 
 
@@ -231,3 +233,21 @@ def _print_ok():
     :return:
     """
     _print_output(u'\u2714', '\n', False)
+
+
+def _print_ko():
+    """
+    Aux function for printing a cross
+    :return:
+    """
+    puts(red(u'\u2718', bold=True), end='\n', show_prefix=False, flush=True)
+
+
+def _check_run_result(result):
+    """
+    Check if result of run command is succeded
+    """
+    if result.failed:
+        _print_ko()
+        puts(red(result, bold=True), end='\n', show_prefix=False, flush=True)
+        raise SystemExit()
