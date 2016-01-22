@@ -61,7 +61,7 @@ def deploy():
 
     with cd(server['path']):
         # Execute git pull
-        #_pull()
+        _pull()
 
         # Execute post deployment tasks
         _post_deployment_tasks()
