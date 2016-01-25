@@ -70,6 +70,13 @@ hosts:
             symlink: true
             relative: false
             target_path: '/path/to/target/path'
+        file_backups:
+            enabled: false
+            destination_path: '/path/to/target/path'
+            files:
+                - '/path/to/target/path'
+                - '/path/to/target/path'
+            number_of_backups: 10
 ```
 
 Some things to take into account:
@@ -86,6 +93,8 @@ can be done using a private key. It is extremely recommended to use it, so you d
 each time you deploy the application.
 - `assets` manages the `assets:install` task. If its `enabled` key is true, it installs the assets, with the
 corresponding options specified, that are the same as the Symfony2 command. 
+- `file_backups` manages backups of files on production server. If its `enabled` key is true, it creates 
+a backup on `destination_path` with files specified in `files` key. 
 
 ========================
 
@@ -105,7 +114,7 @@ fab --set server=prod pre_deploy
 
 ### `deploy`
 
-It deploys the application by updating the source to the last commit of the specified git branch, executes a
+It deploys the application by updating the source to the last commit of the specified git branch, saves a backup of files -if specified- executes a
 composer update, installs assets —if specified— executes database migrations —if specified— and clears the cache
 for the _production_ environment.
 
@@ -158,7 +167,6 @@ fab --set server=server_name,verbose deploy
 
 ## TODO
 
-- File backup, for user files, such as images.
 - Ship as a bundle or git submodule.
 - Add more post-deployment tasks~~, such as installing assets~~.
 - Checking `hosts.yml` file integrity.
